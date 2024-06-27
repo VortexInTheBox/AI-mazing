@@ -71,7 +71,7 @@ bool MazeRenderer::eventCatch(Maze *maze)
                 printf("start: %d - %d \t goal: %d - %d \n", normalizedStart.first, normalizedStart.second, normalizedGoal.first, normalizedGoal.second);
                 printf("path lenght: %d\n", path.size());
 
-                for (int i = 0; i < path.size(); i++)
+                for (unsigned int i = 0; i < path.size(); i++)
                 {
                     //printf("%d - %d\n", path[i].first, path[i].second);
                     drawRect({mazeGrid.y + (path[i].second * mazeGrid.cell_size), mazeGrid.x + (path[i].first * mazeGrid.cell_size)}, green);

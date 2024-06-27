@@ -58,7 +58,7 @@ std::vector<std::pair<int, int>> Maze::getNeighbors(int x, int y)
     std::vector<std::pair<int, int>> neighbors;
     std::vector<std::pair<int, int>> d = {std::make_pair(-1, 0), std::make_pair(0, -1), std::make_pair(1, 0), std::make_pair(0, 1)};
     std::pair<int, int> neighbor;
-    for (int i = 0; i < 4; i++)
+    for (unsigned int i = 0; i < 4; i++)
     {
         neighbor = std::make_pair(x + d[i].first, y + d[i].second);
 
@@ -75,7 +75,7 @@ std::vector<std::pair<int, int>> Maze::getUnvisitedNeighbors(int x, int y)
 {
     std::vector<std::pair<int, int>> neighbors = getNeighbors(x, y);
     std::vector<std::pair<int, int>> unvisitedNeighbors;
-    for (int i = 0; i < neighbors.size(); i++)
+    for (unsigned int i = 0; i < neighbors.size(); i++)
     {
         if (!visited[neighbors[i].first][neighbors[i].second])
         {
@@ -87,7 +87,27 @@ std::vector<std::pair<int, int>> Maze::getUnvisitedNeighbors(int x, int y)
 
 std::vector<std::pair<int, int>> Maze::getAccessibleNeighbors(int x, int y)
 {
-    
+
+    std::vector<std::pair<int, int>> neighbors = getNeighbors(x, y);
+    std::vector<std::pair<int, int>> accessibleNeighbors;
+    for (unsigned int i = 0; i < neighbors.size(); i++)
+    {
+        int nx = neighbors[i].first;
+        int ny = neighbors[i].second;
+
+        if (ny == y && horizontal_walls[std::min(x, nx)][y])
+        {
+            continue;
+        }
+        else if (nx == x && vertical_walls[x][std::min(y, ny)])
+        {
+            continue;
+        }
+
+        accessibleNeighbors.push_back(neighbors[i]);
+
+    }
+    return accessibleNeighbors;
 }
 
 bool Maze::getVerticalWall(int x, int y)
@@ -149,9 +169,19 @@ void Maze::print()
               << std::endl;
 }
 
-float h(std::pair<int, int> current, std::pair<int, int> goal)
+std::vector<std::pair<int, int>> Maze::rebuildPath(std::map<std::pair<int, int>, std::pair<int, int>> cameFrom, std::pair<int, int> start, std::pair<int, int> end)
 {
-    return sqrt(pow((goal.first - current.first), 2) + pow((goal.second - current.second), 2));
+    std::vector<std::pair<int, int>> path;
+
+    std::pair<int, int> current = end;
+
+    while (current != start)
+    {
+        path.push_back(current);
+        current = cameFrom[current];
+    }
+    path.push_back(start);
+    return path;
 }
 
 std::vector<std::pair<int, int>> Maze::solve(std::pair<int, int> start, std::pair<int, int> goal)
@@ -159,38 +189,28 @@ std::vector<std::pair<int, int>> Maze::solve(std::pair<int, int> start, std::pai
     std::priority_queue<std::pair<int, std::pair<int, int>>> frontier;
     frontier.push(make_pair(0, start));
 
-    //Creiamo le matrici di f e di g grandi height x width, inizializzate ad infinito, ovvero non conosciamo la distanza tra lo start e ogni singolo nodo
+    // Creiamo le matrici di f e di g grandi height x width, inizializzate ad infinito, ovvero non conosciamo la distanza tra lo start e ogni singolo nodo
     std::vector<std::vector<float>> f(height, std::vector<float>(width, std::numeric_limits<float>::infinity()));
     std::vector<std::vector<float>> g(height, std::vector<float>(width, std::numeric_limits<float>::infinity()));
 
-    //Mappa utilizzata per ricostruire il percorso seguito
+    // Mappa utilizzata per ricostruire il percorso seguito
     std::map<std::pair<int, int>, std::pair<int, int>> cameFrom;
 
     f[start.first][start.second] = h(start, goal);
     g[start.first][start.second] = 0;
 
+    std::pair<int, int> current;
+
     while (!frontier.empty())
     {
-        std::pair<int, int> current = frontier.top().second;
+        current = frontier.top().second;
         frontier.pop();
 
         if (current == goal)
-        {
+            return rebuildPath(cameFrom, start, current);
 
-            std::vector<std::pair<int, int>> path;
-
-            while (current != start)
-            {
-                path.push_back(current);
-                current = cameFrom[current];
-            }
-            path.push_back(start);
-            return path;
-        }
-
-        // Ottimizzare la scelta delle celle vicine prendendo neighbors che non sono divisi da muri, esempio: getAccessibleNeighbors()
-        std::vector<std::pair<int, int>> neighbors = getNeighbors(current.first, current.second);
-        for (int i = 0; i < neighbors.size(); i++)
+        std::vector<std::pair<int, int>> neighbors = getAccessibleNeighbors(current.first, current.second);
+        for (unsigned int i = 0; i < neighbors.size(); i++)
         {
 
             int x = current.first;
@@ -198,15 +218,6 @@ std::vector<std::pair<int, int>> Maze::solve(std::pair<int, int> start, std::pai
 
             int nx = neighbors[i].first;
             int ny = neighbors[i].second;
-
-            if (ny == y && horizontal_walls[std::min(x, nx)][y]) // Same column
-            {
-                continue;
-            }
-            else if (nx == x && vertical_walls[x][std::min(y, ny)]) // Same row
-            {
-                continue;
-            }
 
             float new_g = g[x][y] + 1;
             if (new_g < g[nx][ny])
@@ -219,4 +230,10 @@ std::vector<std::pair<int, int>> Maze::solve(std::pair<int, int> start, std::pai
             }
         }
     }
+    return rebuildPath(cameFrom, start, current);
+}
+
+float Maze::h(std::pair<int, int> current, std::pair<int, int> goal)
+{
+    return sqrt(pow((goal.first - current.first), 2) + pow((goal.second - current.second), 2));
 }

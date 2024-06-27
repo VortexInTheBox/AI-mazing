@@ -12,6 +12,7 @@
 #include <queue>
 #include <limits>
 
+
 class Maze
 {
 private:
@@ -30,8 +31,10 @@ public:
     bool getVerticalWall(int x, int y);
     bool getHorizontalWall(int x, int y);
     void print();
+    std::vector<std::pair<int, int>> rebuildPath(std::map<std::pair<int, int>, std::pair<int, int>> cameFrom, std::pair<int, int> start, std::pair<int, int> end);
     std::vector<std::pair<int, int>> solve(std::pair<int, int> start, std::pair<int, int> goal);
     std::vector<std::pair<int, int>> getAccessibleNeighbors(int x, int y);
+    static float h(std::pair<int, int> current, std::pair<int, int> goal);
 };
 
 #endif
