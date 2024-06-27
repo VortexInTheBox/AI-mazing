@@ -1,28 +1,33 @@
-# Compiler
 CXX = g++
-
-# Compiler flags
 CXXFLAGS = -I./include -Wall -std=c++11
-
-# Linker flags
 LDFLAGS = -L./lib -lmingw32 -lSDL2main -lSDL2
 
-# Source files
 SRCS = $(wildcard src/*.cpp)
-
-# Object files
-OBJS = $(SRCS:.cpp=.o)
-
-# Executable
+OBJS = $(patsubst src/%.cpp, obj/%.o, $(SRCS))
 TARGET = maze
 
-all: $(TARGET)
+ifeq ($(OS),Windows_NT)
+    RM = cmd /C del /Q
+    MKDIR = cmd /C mkdir
+else
+    RM = rm -f
+    MKDIR = mkdir -p
+endif
+
+
+all: create_objdir $(TARGET)
+
+create_objdir:
+	$(RM) obj
+	$(MKDIR) obj
 
 $(TARGET): $(OBJS)
 	$(CXX) $(OBJS) -o $@ $(LDFLAGS)
 
-%.o: %.cpp
+obj/%.o: src/%.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJS) $(TARGET)
+	$(RM) $(OBJS) $(TARGET)
+
+.PHONY: all clean create_objdir
