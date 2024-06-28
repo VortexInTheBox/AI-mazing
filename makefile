@@ -14,11 +14,10 @@ else
     MKDIR = mkdir -p
 endif
 
-
 all: create_objdir $(TARGET)
 
 create_objdir:
-	$(RM) obj
+	@if exist obj rmdir /S /Q obj
 	$(MKDIR) obj
 
 $(TARGET): $(OBJS)
