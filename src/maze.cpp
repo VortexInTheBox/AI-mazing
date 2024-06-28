@@ -17,52 +17,81 @@ void Maze::generate(int x, int y)
     horizontal_walls.assign(height - 1, std::vector<bool>(width, true));
 
     visited[x][y] = true;
-    std::stack<std::pair<int, int>> stack;
-    stack.push(std::make_pair(x, y));
-    std::pair<int, int> current;
+    std::stack<Coordinate2D> stack;
+    stack.push(Coordinate2D(x, y));
+    Coordinate2D current;
 
     while (!stack.empty())
     {
         current = stack.top();
         stack.pop();
 
-        std::vector<std::pair<int, int>> neighbors = getUnvisitedNeighbors(current.first, current.second);
+        std::vector<Coordinate2D> neighbors = getUnvisitedNeighbors(current.x, current.y);
 
         if (!neighbors.empty())
         {
-            x = current.first;
-            y = current.second;
+            x = current.x;
+            y = current.y;
             stack.push(current);
-            int index = rand() % neighbors.size();
+            int i = rand() % neighbors.size();
 
-            int nx = neighbors[index].first;
-            int ny = neighbors[index].second;
+            int nx = neighbors[i].x, ny = neighbors[i].y;
 
             if (ny == y)
-            { // Same column
+            {
                 horizontal_walls[std::min(x, nx)][y] = false;
             }
             else
-            { // Same row
-                vertical_walls[current.first][std::min(y, ny)] = false;
+            {
+                vertical_walls[current.x][std::min(y, ny)] = false;
             }
 
             visited[nx][ny] = true;
-            stack.push(std::make_pair(nx, ny));
+            stack.push(Coordinate2D(nx, ny));
         }
+    }
+    removeRandomWalls();
+}
+
+// Removes (width + height) / 10 walls
+void Maze::removeRandomWalls()
+{
+    int wallsToRemove = (width + height) / 10;
+    for (int i = 0; i < wallsToRemove; i++)
+    {
+        int xIndex = 0;
+        int yIndex = 0;
+
+        do
+        {
+            xIndex = rand() % height;
+            yIndex = rand() % (width - 1);
+        } while (vertical_walls[xIndex][yIndex] == false);
+
+        vertical_walls[xIndex][yIndex] = false;
+        printf("Removed vWall: %d-%d", xIndex, yIndex);
+
+        do
+        {
+            xIndex = rand() % (height - 1);
+            yIndex = rand() % width;
+        } while (vertical_walls[xIndex][yIndex] == false);
+        
+        horizontal_walls[xIndex][yIndex] = false;
+        printf("\t Removed hWall: %d-%d \n", xIndex, yIndex);
     }
 }
 
-std::vector<std::pair<int, int>> Maze::getNeighbors(int x, int y)
+std::vector<Coordinate2D> Maze::getNeighbors(int x, int y)
 {
-    std::vector<std::pair<int, int>> neighbors;
-    std::vector<std::pair<int, int>> d = {std::make_pair(-1, 0), std::make_pair(0, -1), std::make_pair(1, 0), std::make_pair(0, 1)};
-    std::pair<int, int> neighbor;
+    std::vector<Coordinate2D> neighbors;
+    std::vector<Coordinate2D> d = {Coordinate2D(-1, 0), Coordinate2D(0, -1), Coordinate2D(1, 0), Coordinate2D(0, 1)};
+    Coordinate2D neighbor;
     for (unsigned int i = 0; i < 4; i++)
     {
-        neighbor = std::make_pair(x + d[i].first, y + d[i].second);
+        neighbor = Coordinate2D(x + d[i].x, y + d[i].y);
 
-        if ((neighbor.first >= 0 && neighbor.first < width) && (neighbor.second >= 0 && neighbor.second < height))
+        if ((neighbor.x >= 0 && neighbor.x < width) && (neighbor.y >= 0 && neighbor.y < height))
         {
             neighbors.push_back(neighbor);
         }
@@ -71,13 +100,13 @@ std::vector<std::pair<int, int>> Maze::getNeighbors(int x, int y)
     return neighbors;
 }
 
-std::vector<std::pair<int, int>> Maze::getUnvisitedNeighbors(int x, int y)
+std::vector<Coordinate2D> Maze::getUnvisitedNeighbors(int x, int y)
 {
-    std::vector<std::pair<int, int>> neighbors = getNeighbors(x, y);
-    std::vector<std::pair<int, int>> unvisitedNeighbors;
+    std::vector<Coordinate2D> neighbors = getNeighbors(x, y);
+    std::vector<Coordinate2D> unvisitedNeighbors;
     for (unsigned int i = 0; i < neighbors.size(); i++)
     {
-        if (!visited[neighbors[i].first][neighbors[i].second])
+        if (!visited[neighbors[i].x][neighbors[i].y])
         {
             unvisitedNeighbors.push_back(neighbors[i]);
         }
@@ -85,30 +114,42 @@ std::vector<std::pair<int, int>> Maze::getUnvisitedNeighbors(int x, int y)
     return unvisitedNeighbors;
 }
 
-std::vector<std::pair<int, int>> Maze::getAccessibleNeighbors(int x, int y)
+std::vector<Coordinate2D> Maze::getAccessibleNeighbors(int x, int y)
 {
-
-    std::vector<std::pair<int, int>> neighbors = getNeighbors(x, y);
-    std::vector<std::pair<int, int>> accessibleNeighbors;
+    std::vector<Coordinate2D> neighbors = getNeighbors(x, y);
+    std::vector<Coordinate2D> accessibleNeighbors;
     for (unsigned int i = 0; i < neighbors.size(); i++)
     {
-        int nx = neighbors[i].first;
-        int ny = neighbors[i].second;
+        int nx = neighbors[i].x, ny = neighbors[i].y;
 
-        if (ny == y && horizontal_walls[std::min(x, nx)][y])
+        if (!(ny == y && horizontal_walls[std::min(x, nx)][y]) && !(nx == x && vertical_walls[x][std::min(y, ny)]))
         {
-            continue;
+            accessibleNeighbors.push_back(neighbors[i]);
         }
-        else if (nx == x && vertical_walls[x][std::min(y, ny)])
-        {
-            continue;
-        }
-
-        accessibleNeighbors.push_back(neighbors[i]);
-
     }
     return accessibleNeighbors;
 }
+
+/*
+std::vector<Coordinate2D> Maze::getUnvisitedAccessibleNeighbors(int x, int y)
+{
+    std::vector<Coordinate2D> neighbors = getNeighbors(x, y);
+    std::vector<Coordinate2D> unvisitedAccessibleNeighbors;
+    for (unsigned int i = 0; i < neighbors.size(); i++)
+    {
+        int nx = neighbors[i].x, ny = neighbors[i].y;
+
+        bool isUnvisited = !visited[nx][ny];
+        bool isAccessible = !(ny == y && horizontal_walls[std::min(x, nx)][y]) && !(nx == x && vertical_walls[x][std::min(y, ny)]);
+
+        if (isUnvisited && isAccessible)
+        {
+            unvisitedAccessibleNeighbors.push_back(neighbors[i]);
+        }
+    }
+    return unvisitedAccessibleNeighbors;
+}
+*/
 
 bool Maze::getVerticalWall(int x, int y)
 {
@@ -169,11 +210,11 @@ void Maze::print()
               << std::endl;
 }
 
-std::vector<std::pair<int, int>> Maze::rebuildPath(std::map<std::pair<int, int>, std::pair<int, int>> cameFrom, std::pair<int, int> start, std::pair<int, int> end)
+std::vector<Coordinate2D> Maze::rebuildPath(std::map<Coordinate2D, Coordinate2D> cameFrom, Coordinate2D start, Coordinate2D end)
 {
-    std::vector<std::pair<int, int>> path;
+    std::vector<Coordinate2D> path;
 
-    std::pair<int, int> current = end;
+    Coordinate2D current = end;
 
     while (current != start)
     {
@@ -184,22 +225,22 @@ std::vector<std::pair<int, int>> Maze::rebuildPath(std::map<std::pair<int, int>,
     return path;
 }
 
-std::vector<std::pair<int, int>> Maze::solve(std::pair<int, int> start, std::pair<int, int> goal)
+std::vector<Coordinate2D> Maze::solve(Coordinate2D start, Coordinate2D goal)
 {
-    std::priority_queue<std::pair<int, std::pair<int, int>>> frontier;
-    frontier.push(make_pair(0, start));
+    std::priority_queue<std::pair<int, Coordinate2D>, std::vector<std::pair<int, Coordinate2D>>, Compare> frontier;
+    frontier.push(std::make_pair(0, start));
 
     // Creiamo le matrici di f e di g grandi height x width, inizializzate ad infinito, ovvero non conosciamo la distanza tra lo start e ogni singolo nodo
     std::vector<std::vector<float>> f(height, std::vector<float>(width, std::numeric_limits<float>::infinity()));
     std::vector<std::vector<float>> g(height, std::vector<float>(width, std::numeric_limits<float>::infinity()));
 
     // Mappa utilizzata per ricostruire il percorso seguito
-    std::map<std::pair<int, int>, std::pair<int, int>> cameFrom;
+    std::map<Coordinate2D, Coordinate2D> cameFrom;
 
-    f[start.first][start.second] = h(start, goal);
-    g[start.first][start.second] = 0;
+    f[start.x][start.y] = h(start, goal);
+    g[start.x][start.y] = 0;
 
-    std::pair<int, int> current;
+    Coordinate2D current;
 
     while (!frontier.empty())
     {
@@ -209,31 +250,28 @@ std::vector<std::pair<int, int>> Maze::solve(std::pair<int, int> start, std::pai
         if (current == goal)
             return rebuildPath(cameFrom, start, current);
 
-        std::vector<std::pair<int, int>> neighbors = getAccessibleNeighbors(current.first, current.second);
+        std::vector<Coordinate2D> neighbors = getAccessibleNeighbors(current.x, current.y);
         for (unsigned int i = 0; i < neighbors.size(); i++)
         {
 
-            int x = current.first;
-            int y = current.second;
-
-            int nx = neighbors[i].first;
-            int ny = neighbors[i].second;
+            int x = current.x, y = current.y;
+            int nx = neighbors[i].x, ny = neighbors[i].y;
 
             float new_g = g[x][y] + 1;
             if (new_g < g[nx][ny])
             {
                 g[nx][ny] = new_g;
                 f[nx][ny] = g[nx][ny] + h(current, goal);
-                frontier.push(make_pair(f[nx][ny], neighbors[i]));
+                frontier.push(std::make_pair(f[nx][ny], neighbors[i]));
                 cameFrom[neighbors[i]] = current;
-                // std::cout << neighbors[i].first << " - " << neighbors[i].second << " = " << current.first << " - " << current.second << std::endl;
+                // std::cout << neighbors[i].x << " - " << neighbors[i].y << " = " << current.x << " - " << current.y << std::endl;
             }
         }
     }
     return rebuildPath(cameFrom, start, current);
 }
 
-float Maze::h(std::pair<int, int> current, std::pair<int, int> goal)
+float Maze::h(Coordinate2D current, Coordinate2D goal)
 {
-    return sqrt(pow((goal.first - current.first), 2) + pow((goal.second - current.second), 2));
+    return sqrt(pow((goal.x - current.x), 2) + pow((goal.y - current.y), 2));
 }

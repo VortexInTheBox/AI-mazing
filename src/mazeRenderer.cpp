@@ -64,17 +64,17 @@ bool MazeRenderer::eventCatch(Maze *maze)
             }
             case SDLK_r:
             {
-                std::pair<int, int> normalizedStart = std::make_pair(((start.y - mazeGrid.y) / mazeGrid.cell_size), ((start.x - mazeGrid.x) / mazeGrid.cell_size));
-                std::pair<int, int> normalizedGoal = std::make_pair(((goal.y - mazeGrid.y) / mazeGrid.cell_size), ((goal.x - mazeGrid.x) / mazeGrid.cell_size));
+                Coordinate2D normalizedStart = Coordinate2D(((start.y - mazeGrid.y) / mazeGrid.cell_size), ((start.x - mazeGrid.x) / mazeGrid.cell_size));
+                Coordinate2D normalizedGoal = Coordinate2D(((goal.y - mazeGrid.y) / mazeGrid.cell_size), ((goal.x - mazeGrid.x) / mazeGrid.cell_size));
                 
-                std::vector<std::pair<int, int>> path = maze->solve(normalizedStart, normalizedGoal);
-                printf("start: %d - %d \t goal: %d - %d \n", normalizedStart.first, normalizedStart.second, normalizedGoal.first, normalizedGoal.second);
+                std::vector<Coordinate2D> path = maze->solve(normalizedStart, normalizedGoal);
+                printf("start: %d - %d \t goal: %d - %d \n", normalizedStart.x, normalizedStart.y, normalizedGoal.x, normalizedGoal.y);
                 printf("path lenght: %d\n", path.size());
 
                 for (unsigned int i = 0; i < path.size(); i++)
                 {
-                    //printf("%d - %d\n", path[i].first, path[i].second);
-                    drawRect({mazeGrid.y + (path[i].second * mazeGrid.cell_size), mazeGrid.x + (path[i].first * mazeGrid.cell_size)}, green);
+                    //printf("%d - %d\n", path[i].x, path[i].y);
+                    drawRect({mazeGrid.y + (path[i].y * mazeGrid.cell_size), mazeGrid.x + (path[i].x * mazeGrid.cell_size)}, green);
                 }
 
                 drawRect(start, red);
